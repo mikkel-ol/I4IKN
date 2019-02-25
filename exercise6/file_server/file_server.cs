@@ -2,18 +2,22 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace tcp
 {
 	class file_server
 	{
+		// Nested class for handling socket data
 		class SocketData {
-			const int BUFSIZE = 1000;
+			public const int BUFSIZE = 1000; // Maximum packet size
 
-			public Socket sock = null;
+			public Socket sock;
             public byte[] buffer = new byte[BUFSIZE];
+			public StringBuilder sb = new StringBuilder();
 		}
+
 		const int PORT = 9000;
 		const int MAXCONNECTIONS = 1;
 		
@@ -35,6 +39,7 @@ namespace tcp
 			Console.WriteLine("Done");
 
             try {
+				// Listen for connections
                 serverSocket.Bind(localEndPoint);
                 serverSocket.Listen(MAXCONNECTIONS);
 
@@ -43,10 +48,10 @@ namespace tcp
                     eventSignal.Reset();
 
                     // Start an asynchronous socket to listen for connections.  
-                    Console.WriteLine("Waiting for a connection...");
                     serverSocket.BeginAccept(
                         new AsyncCallback(AcceptConnectionCallback),
                         serverSocket);
+						
                     // Wait until a connection is made before continuing.  
                     eventSignal.WaitOne();
                 }
@@ -59,6 +64,7 @@ namespace tcp
 
 		private void AcceptConnectionCallback(IAsyncResult ar)
 		{
+			Console.Write("Connection made. ");
             // Signal the main thread to continue.  
             eventSignal.Set();
 
@@ -70,23 +76,59 @@ namespace tcp
 			SocketData data = new SocketData();
 			data.sock = handler;
 
-            handler.BeginReceive(data.buffer, 0, data.BUFSIZE, 0,
-                new AsyncCallback(ConnectionReadCallback), data);
+			Console.WriteLine("Beginning to receive data from client..");
+            handler.BeginReceive(data.buffer, 0, SocketData.BUFSIZE, 0,
+                new AsyncCallback(ReadCallback), data);
         }
 
-		private void ConnectionReadCallback(IAsyncResult ar)
+		private void ReadCallback(IAsyncResult ar)
 		{
 			SocketData data = (SocketData) ar.AsyncState;
-		}
+			Socket handler = data.sock;
 
-		private void sendFile (String fileName, long fileSize, NetworkStream io)
+            String content = String.Empty;
+
+            // Read data from the client socket.   
+            int bytesRead = handler.EndReceive(ar);
+
+            if (bytesRead > 0) {
+                // There  might be more data, so store the data received so far.  
+                data.sb.Append(Encoding.ASCII.GetString(data.buffer, 0, bytesRead));
+
+                content = data.sb.ToString();
+
+				// Check for all data read
+				if (bytesRead <= SocketData.BUFSIZE) {
+					// Send file to client
+					SendFile(content, handler);
+
+				} else {
+					// Not all data received. Get more.
+					handler.BeginReceive(data.buffer, 0, SocketData.BUFSIZE, 0,
+						new AsyncCallback(ReadCallback), data);
+				}
+            }
+        }
+
+		private void SendFile(String fileName, Socket socket)
 		{
-			// TO DO Your own code
+			if (!File.Exists(fileName)) {
+
+
+
+			} else {
+				// Send file size
+				byte[] filesize = Encoding.ASCII.GetBytes(new FileInfo(fileName).Length.ToString());
+				socket.Send(filesize);
+
+				// Send file
+				socket.SendFile(fileName);
+			}
 		}
 
 		public static void Main (string[] args)
 		{
-			Console.WriteLine ("Server starts...");
+			Console.WriteLine ("Server starts..");
 			new file_server();
 		}
 	}
