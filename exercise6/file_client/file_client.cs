@@ -33,8 +33,6 @@ namespace tcp
                 Console.WriteLine($"Connected to {sender.RemoteEndPoint.ToString()}");
                 Console.ResetColor();
 
-                testMultipleSockets();
-
                 // Get file path
                 Console.Write("Path to file: ");
                 string path = Console.ReadLine();
@@ -85,30 +83,6 @@ namespace tcp
             } catch (Exception e) {
                 Console.WriteLine(e.ToString());
             }
-        }
-
-        private void testMultipleSockets() {
-            Console.WriteLine("Hello..");
-            // Define ip address and endpoint as local computer
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint remoteEndPoint = new IPEndPoint(ipAddress, PORT);
-
-            // Create a TCP/IP socket
-            Socket test = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            test.Connect(remoteEndPoint);
-
-            Socket test2 = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            test2.Connect(remoteEndPoint);
-
-            Socket test3 = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
-
-            test3.Connect(remoteEndPoint);
         }
 
         public static void Main(string[] args)
