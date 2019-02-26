@@ -37,13 +37,13 @@ namespace tcp
                 {
                     // Blocking
                     handler = listener.Accept();
-                    Console.WriteLine("Client connected.");
+                    WriteInColor("GREEN", "Client connected.");
 
 					// Get file path
                     GetFilePath();
 
 					// Check if file exist
-					Console.Write("Checking if file exists.. ");
+					Console.Write("Checking if file exists.. \t");
 					if (!File.Exists(filePath)) {
 						// Send error code
 						FileNotFound();
@@ -52,7 +52,7 @@ namespace tcp
                         SendFile();
 					}
 
-					Console.Write("\nWaiting for new connection.. ");
+					Console.Write("\nWaiting for new connection.. \t");
                 }
 
             } catch (Exception e) {
@@ -62,14 +62,15 @@ namespace tcp
 
 		private void CreateSocket()
 		{
-            Console.Write("Creating socket.. ");
+            Console.Write("Creating socket.. \t\t");
 
             listener = new Socket(ipAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
 
-            Console.WriteLine("Done.");
 
-            Console.Write("Listening for connections.. ");
+            WriteInColor("GREEN", "Done.");
+
+            Console.Write("Listening for connections.. \t");
             listener.Bind(localEndPoint);
             listener.Listen(MAXCONN);
 		}
@@ -77,18 +78,16 @@ namespace tcp
 		private void GetFilePath()
 		{
             // Assume first packet is path
-            Console.Write("Getting file path.. ");
+            Console.Write("Getting file path.. \t\t");
             handler.Blocking = true;
             int bytesReceived = handler.Receive(buffer);
             filePath = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
-            Console.WriteLine("File path received.");
+            WriteInColor("GREEN", "File path received.");
 		}
 
 		private void FileNotFound()
 		{
-			Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine("FILE NOT FOUND. SENDING ERROR CODE.");
-            Console.ResetColor();
+            WriteInColor("RED", "FILE NOT FOUND. SENDING ERROR CODE.");
 
             // Send error code
             handler.Send(Encoding.ASCII.GetBytes("404"));		
@@ -96,26 +95,51 @@ namespace tcp
 
 		private void SendFile()
 		{
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine("File found.");
-            Console.ResetColor();
+            WriteInColor("GREEN", "File found.");
 
             // Send file size
-            Console.Write("Sending file size.. ");
+            Console.Write("Sending file size.. \t\t");
             byte[] fileSize = Encoding.ASCII.GetBytes("200" + new FileInfo(filePath).Length.ToString());
             handler.Send(fileSize);
-            Console.WriteLine("Done.");
+            WriteInColor("GREEN", "Done.");
 
             // Send file
-            Console.Write("Sending file.. ");
+            Console.Write("Sending file.. \t\t\t");
             handler.SendFile(filePath);
-            Console.WriteLine("Done.");
+            WriteInColor("GREEN", "Done.\n");
 		}
+
+
 
         public static void Main(string[] args)
         {
-            Console.WriteLine("Server starts..\n");
+            WriteInColor("MAGENTA", "\n" +
+				"FILE SERVER IS STARTING UP.."
+			+ "\n");
             new file_server();
+        }
+
+        static void WriteInColor(string color, string msg)
+        {
+            if (color == "GREEN")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else if (color == "RED")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else if (color == "MAGENTA")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else return;
         }
     }
 }
