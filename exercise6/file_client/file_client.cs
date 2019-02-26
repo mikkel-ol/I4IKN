@@ -11,84 +11,149 @@ namespace tcp
         const int PORT = 9000;
         const int BUFSIZE = 1000;
 
+        byte[] buffer = new Byte[BUFSIZE];
+        string path, fileName;
+        int bytesReceived = 0;
+
+        Socket sender;
+
+        IPHostEntry ipHostInfo;
+        IPAddress ipAddress;
+        IPEndPoint remoteEndPoint;
+
         private file_client()
         {
-            byte[] buffer = new Byte[BUFSIZE];
-
             // Define ip address and endpoint as local computer
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint remoteEndPoint = new IPEndPoint(ipAddress, PORT);
+            ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            ipAddress = ipHostInfo.AddressList[0];
+            remoteEndPoint = new IPEndPoint(ipAddress, PORT);
 
             // Create a TCP/IP socket
-            Console.Write("Creating socket.. ");
-            Socket sender = new Socket(ipAddress.AddressFamily,
-                SocketType.Stream, ProtocolType.Tcp);
-            Console.WriteLine("Done.");
+            CreateSocket();
 
-            try {
-                Console.Write("Connecting to server.. ");
-                sender.Connect(remoteEndPoint);
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine($"Connected to {sender.RemoteEndPoint.ToString()}");
-                Console.ResetColor();
+            try
+            {
+                // Connect to file server
+                ConnectToServer();
 
-                // Get file path
-                Console.Write("Path to file: ");
-                string path = Console.ReadLine();
+                // Ask for file
+                GetFileFromUser();
 
-                string fileName = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
-                Console.Write($"Retrieving file {fileName}.. ");
-
-                
-                // Request file
+                // Request file from server
                 sender.Send(Encoding.ASCII.GetBytes(path));
 
-                // Get reply
-                int bytesReceived = sender.Receive(buffer);
-                string statusCode = Encoding.ASCII.GetString(buffer, 0, 3);
+                // Check status code
+                if (!IsFileOnServer()) return;
 
-                // Was file found?
-                if (statusCode == "404") {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine(
-                        "ERROR. FILE NOT FOUND." +
-                        "\n\n" +
-                        "EXITING." +
-                        "\n"
-                    );
-                    Console.ResetColor();
+                // Receive file
+                ReceiveFile();
 
-                    return;
-                }
-
-                // Extract file size from reply
-                string fileSizeString = Encoding.ASCII.GetString(buffer, 3, bytesReceived-3);
-                int fileSize = Convert.ToInt32(fileSizeString);
-
-                // Retrieve file
-                sender.Blocking = true;
-                buffer = new Byte[fileSize];
-                string pathWriteReceived = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/received-" + fileName;
-
-                bytesReceived = sender.Receive(buffer);
-                while ((bytesReceived % 1000) == 0) { // More data
-                    bytesReceived += sender.Receive(buffer);
-                }
-                File.WriteAllBytes(pathWriteReceived, buffer);
-
-                Console.WriteLine("Done.");
-                Console.WriteLine($"\nFile saved to {pathWriteReceived}.");
-
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Console.WriteLine(e.ToString());
             }
         }
 
+        private void CreateSocket()
+        {
+            Console.Write("Creating socket.. \t");
+
+            sender = new Socket(ipAddress.AddressFamily,
+                SocketType.Stream, ProtocolType.Tcp);
+
+            WriteInColor("GREEN", "Done.");
+        }
+
+        private void ConnectToServer()
+        {
+            Console.Write("Connecting to server.. \t");
+            sender.Connect(remoteEndPoint);
+            WriteInColor("GREEN", $"{sender.RemoteEndPoint.ToString()}");
+        }
+
+        private void GetFileFromUser()
+        {
+            Console.Write("Path to file: \t\t");
+            path = Console.ReadLine();
+
+            fileName = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
+            Console.Write($"Retrieving file.. \t");
+        }
+
+        private bool IsFileOnServer()
+        {
+            bytesReceived = sender.Receive(buffer);
+
+            string statusCode = Encoding.ASCII.GetString(buffer, 0, 3);
+
+            if (statusCode == "200") return true;
+            else if (statusCode == "404")
+            {
+                WriteInColor("RED",
+                    "ERROR. FILE NOT FOUND ON SERVER." +
+                    "\n\n" +
+                    "EXITING"
+                );
+
+                return false;
+            }
+
+            WriteInColor("RED", "AN UNKNOWN ERROR OCCURED");
+            return false;
+        }
+
+        private void ReceiveFile()
+        {
+            string fileSizeString = Encoding.ASCII.GetString(buffer, 3, bytesReceived - 3);
+            int fileSize = Convert.ToInt32(fileSizeString);
+
+            // Retrieve file
+            sender.Blocking = true;
+            buffer = new Byte[fileSize];
+            string pathWriteReceived = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/received-" + fileName;
+
+            bytesReceived = sender.Receive(buffer);
+            while ((bytesReceived % 1000) == 0)
+            { // More data
+                bytesReceived += sender.Receive(buffer);
+            }
+            File.WriteAllBytes(pathWriteReceived, buffer);
+
+            WriteInColor("GREEN", "Done.");
+            Console.WriteLine($"\nFile saved as \"{pathWriteReceived}\"");
+        }
+
         public static void Main(string[] args)
         {
-            Console.WriteLine("Client starts..\n");
+            WriteInColor("MAGENTA", "\n" +
+                "CLIENT IS STARTING UP.."
+            + "\n");
+
             new file_client();
+        }
+
+        static void WriteInColor(string color, string msg)
+        {
+            if (color == "GREEN")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else if (color == "RED")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else if (color == "MAGENTA")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                Console.WriteLine(msg);
+                Console.ResetColor();
+            }
+            else return;
         }
     }
 }

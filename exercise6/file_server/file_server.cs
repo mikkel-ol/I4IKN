@@ -67,7 +67,6 @@ namespace tcp
             listener = new Socket(ipAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
 
-
             WriteInColor("GREEN", "Done.");
 
             Console.Write("Listening for connections.. \t");
@@ -116,6 +115,7 @@ namespace tcp
             WriteInColor("MAGENTA", "\n" +
 				"FILE SERVER IS STARTING UP.."
 			+ "\n");
+
             new file_server();
         }
 
