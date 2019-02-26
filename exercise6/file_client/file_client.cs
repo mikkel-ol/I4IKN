@@ -105,8 +105,7 @@ namespace tcp
 
         private void ReceiveFile()
         {
-            string fileSizeString = Encoding.ASCII.GetString(buffer, 3, bytesReceived - 3);
-            int fileSize = Convert.ToInt32(fileSizeString);
+            int fileSize = Convert.ToInt32(Encoding.ASCII.GetString(buffer, 3, bytesReceived - 3));
 
             // Retrieve file
             sender.Blocking = true;
