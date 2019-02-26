@@ -10,9 +10,12 @@ namespace tcp
     {
         const int PORT = 9000;
         const int BUFSIZE = 1000;
+        const string ACK = "200";
+        const string SUCC = "200";
+        const string NOTFOUND = "404";
 
         byte[] buffer = new Byte[BUFSIZE];
-        string path, fileName;
+        string path, file;
         int bytesReceived = 0;
 
         Socket sender;
@@ -77,7 +80,7 @@ namespace tcp
             Console.Write("Path to file: \t\t");
             path = Console.ReadLine();
 
-            fileName = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
+            file = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
             Console.Write($"Retrieving file.. \t");
         }
 
@@ -87,9 +90,15 @@ namespace tcp
 
             string statusCode = Encoding.ASCII.GetString(buffer, 0, 3);
 
-            if (statusCode == "200") return true;
-            else if (statusCode == "404")
+            if (statusCode == SUCC) {
+                sender.Send(Encoding.ASCII.GetBytes(ACK)); // Send ack
+
+                return true;
+            }
+            else if (statusCode == NOTFOUND)
             {
+                sender.Send(Encoding.ASCII.GetBytes(ACK)); // Send ack
+
                 WriteInColor("RED",
                     "ERROR. FILE NOT FOUND ON SERVER." +
                     "\n\n" +
@@ -105,22 +114,39 @@ namespace tcp
 
         private void ReceiveFile()
         {
+            // "/Desktop/test.txt"
+            string fileExtension = Path.GetExtension(file); // ".txt"
+            string fileName = file.Substring(0, file.Length - fileExtension.Length); // "test"
+
+            string fileToWrite = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/" + fileName + "_received" + fileExtension;
+
+            int i = 1;
+            while (File.Exists(fileToWrite)) {
+                fileToWrite = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/" + fileName + "_received_" + i + fileExtension;
+                i++;
+
+                // Sanity check
+                if (i > 100) {
+                    WriteInColor("RED", "ERROR. CANNOT WRITE FILE.");
+                    return;
+                }
+            }
+
             int fileSize = Convert.ToInt32(Encoding.ASCII.GetString(buffer, 3, bytesReceived - 3));
 
             // Retrieve file
             sender.Blocking = true;
             buffer = new Byte[fileSize];
-            string pathWriteReceived = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/received-" + fileName;
 
             bytesReceived = sender.Receive(buffer);
             while ((bytesReceived % 1000) == 0)
             { // More data
                 bytesReceived += sender.Receive(buffer);
             }
-            File.WriteAllBytes(pathWriteReceived, buffer);
+            File.WriteAllBytes(fileToWrite, buffer);
 
             WriteInColor("GREEN", "Done.");
-            Console.WriteLine($"\nFile saved as \"{pathWriteReceived}\"");
+            Console.WriteLine($"\nFile saved as \"{fileToWrite}\"");
         }
 
         public static void Main(string[] args)

@@ -11,6 +11,7 @@ namespace tcp
         const int PORT = 9000;
         const int BUFSIZE = 1000;
 		const int MAXCONN = 1; // Not working ..
+		const int TIMEOUT = 10 * 1000; // ms
         
 		byte[] buffer = new Byte[BUFSIZE];
 		string filePath;
@@ -102,10 +103,25 @@ namespace tcp
             handler.Send(fileSize);
             WriteInColor("GREEN", "Done.");
 
-            // Send file
-            Console.Write("Sending file.. \t\t\t");
-            handler.SendFile(filePath);
-            WriteInColor("GREEN", "Done.\n");
+            // Wait for acknowledge
+            handler.Blocking = true;
+			handler.ReceiveTimeout = TIMEOUT;
+
+			try {
+				int bytesReceived = handler.Receive(buffer);
+				string ack = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+				
+				if (!(ack == "200")) WriteInColor("RED", "ERROR. ACKNOWLEDGE NOT RECEIVED.");
+                else
+                { // Send file
+                    Console.Write("Sending file.. \t\t\t");
+                    handler.SendFile(filePath);
+                    WriteInColor("GREEN", "Done.\n");
+                }
+
+			} catch (Exception e) {
+				WriteInColor("RED", "ERROR. ACKNOWLEDGE NOT RECEIVED.");
+			}
 		}
 
 
