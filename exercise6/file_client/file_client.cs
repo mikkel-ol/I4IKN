@@ -117,12 +117,12 @@ namespace tcp
             // "/Desktop/test.txt"
             string fileExtension = Path.GetExtension(file); // ".txt"
             string fileName = file.Substring(0, file.Length - fileExtension.Length); // "test"
-
-            string fileToWrite = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/" + fileName + "_received" + fileExtension;
+ 
+            string fileToWrite = Directory.GetCurrentDirectory() + "/" + fileName + "_received" + fileExtension;
 
             int i = 1;
             while (File.Exists(fileToWrite)) {
-                fileToWrite = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "/" + fileName + "_received_" + i + fileExtension;
+                fileToWrite = Directory.GetCurrentDirectory() + "/" + fileName + "_received_" + i + fileExtension;
                 i++;
 
                 // Sanity check
