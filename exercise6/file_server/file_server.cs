@@ -39,19 +39,21 @@ namespace tcp
                     WriteInColor("GREEN", "Client connected.");
 
 					// Get file path
-                    GetFilePath();
+                    if (!GetFilePath()) WriteInColor("RED", "NO FILE PATH RECEIVED.");
 
-					// Check if file exist
-					Console.Write("Checking if file exists.. \t");
-					if (!File.Exists(filePath)) {
-						// Send error code
-						FileNotFound();
+                    else {
+                        // Check if file exist
+                        Console.Write("Checking if file exists.. \t");
+                        if (!File.Exists(filePath)) {
+                            // Send error code
+                            FileNotFound();
 
-					} else { // File exists, send file
-                        SendFile();
-					}
+                        } else { // File exists, send file
+                            SendFile();
+                        }
+                    }
 
-					Console.Write("\nWaiting for new connection.. \t");
+                    Console.Write("\nWaiting for new connection.. \t");
                 }
 
             } catch (Exception e) {
@@ -74,14 +76,19 @@ namespace tcp
             listener.Listen(MAXCONN);
 		}
 
-		private void GetFilePath()
+		private bool GetFilePath()
 		{
             // Assume first packet is path
             Console.Write("Getting file path.. \t\t");
             handler.Blocking = true;
             int bytesReceived = handler.Receive(buffer);
             filePath = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+            
+            // No path received
+            if (filePath.Length == 0) return false;
+
             WriteInColor("GREEN", "File path received.");
+            return true;
 		}
 
 		private void FileNotFound()
@@ -115,12 +122,15 @@ namespace tcp
                 { // Send file
                     Console.Write("Sending file.. \t\t\t");
                     handler.SendFile(filePath);
-                    WriteInColor("GREEN", "Done.\n");
+                    WriteInColor("GREEN", "Done.");
                 }
 
-			} catch (Exception) {
+			} catch (SocketException) {
 				WriteInColor("RED", "ERROR. ACKNOWLEDGE NOT RECEIVED.");
-			}
+
+			} catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
 		}
 
 
