@@ -2,9 +2,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
-
 
 namespace tcp
 {
@@ -127,19 +125,8 @@ namespace tcp
                 path = Console.ReadLine();
                 Console.ResetColor();
             }
-            
-            // Checks for platform
-            // Could be : if (Windows){} else{}
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                file = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
-            }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                file = (path.LastIndexOf('\\') == 0 ? path : path.Substring(path.LastIndexOf('\\') + 1));
-            }
-
+            file = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
             Console.Write($"Retrieving file.. \t");
         }
 
