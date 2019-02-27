@@ -26,10 +26,8 @@ namespace tcp
 
         private file_client()
         {
-            // Define ip address and endpoint as local computer
-            ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            ipAddress = ipHostInfo.AddressList[0];
-            remoteEndPoint = new IPEndPoint(ipAddress, PORT);
+            // Get IP
+            GetIpFromUser();
 
             // Create a TCP/IP socket
             CreateSocket();
@@ -58,6 +56,29 @@ namespace tcp
             }
         }
 
+        private void GetIpFromUser()
+        {
+            Console.Write("(press Enter for ");
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.Write("localhost");
+            Console.ResetColor();
+            Console.WriteLine(")");
+
+            Console.Write("IP to server: ");
+
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+
+            // Set IP to localhost if no input
+            ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            string userIP = Console.ReadLine();
+            ipAddress = userIP.Length > 0 ? IPAddress.Parse(userIP) : IPAddress.Parse("127.0.0.1");
+            remoteEndPoint = new IPEndPoint(ipAddress, PORT);
+
+            Console.ResetColor();
+
+            Console.WriteLine("");
+        }
+
         private void CreateSocket()
         {
             Console.Write("Creating socket.. \t");
@@ -65,7 +86,7 @@ namespace tcp
             sender = new Socket(ipAddress.AddressFamily,
                 SocketType.Stream, ProtocolType.Tcp);
 
-            WriteInColor("GREEN", "Done.");
+            WriteInColor("GREEN", "Done");
         }
 
         private void ConnectToServer()
@@ -145,7 +166,7 @@ namespace tcp
             }
             File.WriteAllBytes(fileToWrite, buffer);
 
-            WriteInColor("GREEN", "Done.");
+            WriteInColor("GREEN", "Done");
             Console.WriteLine($"\nFile saved as \"{fileToWrite}\"");
         }
 
