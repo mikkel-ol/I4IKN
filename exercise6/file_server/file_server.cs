@@ -18,15 +18,13 @@ namespace tcp
 
 		Socket listener, handler;
 
-        IPHostEntry ipHostInfo;
         IPAddress ipAddress;
         IPEndPoint localEndPoint;
 
         private file_server()
         {
 			// Define ip address and endpoint as local computer
-            ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            ipAddress = ipHostInfo.AddressList[0];
+            ipAddress = IPAddress.Any;
             localEndPoint = new IPEndPoint(ipAddress, PORT);
 
 			try {
@@ -71,6 +69,7 @@ namespace tcp
             WriteInColor("GREEN", "Done.");
 
             Console.Write("Listening for connections.. \t");
+            //listener.Bind(localEndPoint);
             listener.Bind(localEndPoint);
             listener.Listen(MAXCONN);
 		}
@@ -119,7 +118,7 @@ namespace tcp
                     WriteInColor("GREEN", "Done.\n");
                 }
 
-			} catch (Exception e) {
+			} catch (Exception) {
 				WriteInColor("RED", "ERROR. ACKNOWLEDGE NOT RECEIVED.");
 			}
 		}
