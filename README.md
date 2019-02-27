@@ -4,7 +4,7 @@ Git page for exercises in the course *Introduktion til kommunikationsnetværk* a
 
 <br/>
 
-## File server and file client (Exercise 6)
+### File server and file client (Exercise 6)
 
 A solution with both synchronous and asynchronous socket handling is available. 
 
