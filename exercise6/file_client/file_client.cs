@@ -16,7 +16,7 @@ namespace tcp
 
         byte[] buffer = new Byte[BUFSIZE];
         string path, file;
-        int bytesReceived = 0;
+        int bytesReceived;
 
         Socket sender;
 
@@ -46,7 +46,7 @@ namespace tcp
                 // Check status code
                 if (!IsFileOnServer()) return;
 
-                // Receive file
+                // Receive and save file
                 ReceiveFile();
 
             }
@@ -92,14 +92,39 @@ namespace tcp
         private void ConnectToServer()
         {
             Console.Write("Connecting to server.. \t");
-            sender.Connect(remoteEndPoint);
-            WriteInColor("GREEN", $"{sender.RemoteEndPoint.ToString()}");
+
+            try {
+                sender.Connect(remoteEndPoint);
+
+                WriteInColor("GREEN", $"{sender.RemoteEndPoint.ToString()}");
+            } catch (SocketException) {
+                // Connection refused
+                WriteInColor("RED", $"ERROR - COULD NOT CONNECT TO {ipAddress.ToString()}:{PORT}\n");
+
+                // Retry
+                GetIpFromUser();
+                ConnectToServer();
+
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
         }
 
         private void GetFileFromUser()
         {
             Console.Write("Path to file: \t\t");
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
             path = Console.ReadLine();
+            Console.ResetColor();
+
+            while (path.Length == 0) {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Write("INPUT FILE PATH:\t");
+
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                path = Console.ReadLine();
+                Console.ResetColor();
+            }
 
             file = (path.LastIndexOf('/') == 0 ? path : path.Substring(path.LastIndexOf('/') + 1));
             Console.Write($"Retrieving file.. \t");
@@ -121,7 +146,7 @@ namespace tcp
                 sender.Send(Encoding.ASCII.GetBytes(ACK)); // Send ack
 
                 WriteInColor("RED",
-                    "ERROR. FILE NOT FOUND ON SERVER." +
+                    "ERROR. FILE NOT FOUND ON SERVER" +
                     "\n\n" +
                     "EXITING"
                 );
@@ -130,29 +155,12 @@ namespace tcp
             }
 
             WriteInColor("RED", "AN UNKNOWN ERROR OCCURED");
+
             return false;
         }
 
         private void ReceiveFile()
         {
-            // "/Desktop/test.txt"
-            string fileExtension = Path.GetExtension(file); // ".txt"
-            string fileName = file.Substring(0, file.Length - fileExtension.Length); // "test"
- 
-            string fileToWrite = Directory.GetCurrentDirectory() + "/" + fileName + "_received" + fileExtension;
-
-            int i = 1;
-            while (File.Exists(fileToWrite)) {
-                fileToWrite = Directory.GetCurrentDirectory() + "/" + fileName + "_received_" + i + fileExtension;
-                i++;
-
-                // Sanity check
-                if (i > 100) {
-                    WriteInColor("RED", "ERROR. CANNOT WRITE FILE.");
-                    return;
-                }
-            }
-
             int fileSize = Convert.ToInt32(Encoding.ASCII.GetString(buffer, 3, bytesReceived - 3));
 
             // Retrieve file
@@ -164,10 +172,55 @@ namespace tcp
             { // More data
                 bytesReceived += sender.Receive(buffer);
             }
-            File.WriteAllBytes(fileToWrite, buffer);
 
             WriteInColor("GREEN", "Done");
-            Console.WriteLine($"\nFile saved as \"{fileToWrite}\"");
+
+            SaveFile(fileSize);
+        }
+
+        private void SaveFile(int fileSize)
+        {
+            // "../Desktop/test.txt"
+            string fileExtension = Path.GetExtension(file); // ".txt"
+            string fileName = file.Substring(0, file.Length - fileExtension.Length); // "test"
+
+            Console.Write(
+                "\n" + 
+                "(press Enter for current folder)\n" + 
+                "Save file as: "
+            );
+
+            // Get output file path
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            string outputFileName = Console.ReadLine();
+            Console.ResetColor();
+            // If no input, set to current folder
+            outputFileName = outputFileName.Length > 0 ? outputFileName : Directory.GetCurrentDirectory() + "/" + fileName + fileExtension;
+
+            // Check if user input extension
+            if (Path.GetExtension(outputFileName).Length == 0) outputFileName += fileExtension;
+
+            // Append if file exists
+            int i = 1;
+            string outputFileNameAppend = outputFileName;
+            while (File.Exists(outputFileNameAppend))
+            {
+                outputFileNameAppend = outputFileName.Substring(0, outputFileName.Length - Path.GetExtension(outputFileName).Length) + "_" + i + fileExtension;
+                i++;
+
+                // Sanity check
+                if (i > 100)
+                {
+                    WriteInColor("RED", "ERROR. CANNOT WRITE FILE.");
+                    return;
+                }
+            }
+            outputFileName = outputFileNameAppend;
+
+            // Save file
+            File.WriteAllBytes(outputFileName, buffer);
+
+            Console.WriteLine($"\nFile saved as \"{outputFileName}\"");
         }
 
         public static void Main(string[] args)
