@@ -71,7 +71,6 @@ namespace tcp
             WriteInColor("GREEN", "Done.");
 
             Console.Write("Listening for connections.. \t");
-            //listener.Bind(localEndPoint);
             listener.Bind(localEndPoint);
             listener.Listen(MAXCONN);
 		}
