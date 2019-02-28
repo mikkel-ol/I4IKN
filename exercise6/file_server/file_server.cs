@@ -36,6 +36,8 @@ namespace tcp
                 {
                     // Blocking
                     handler = listener.Accept();
+                    listener.Close(); // Close listener socket
+            
                     WriteInColor("GREEN", "Client connected.");
 
 					// Get file path
@@ -53,7 +55,15 @@ namespace tcp
                         }
                     }
 
-                    Console.Write("\nWaiting for new connection.. \t");
+                    Console.WriteLine("");
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.WriteLine(
+                        "CLIENT SUCCESFULLY HANDLED. MAKING NEW SOCKET."
+                    );
+                    Console.ResetColor();
+                    Console.WriteLine("");
+
+                    CreateSocket(); // Start listening
                 }
 
             } catch (Exception e) {
