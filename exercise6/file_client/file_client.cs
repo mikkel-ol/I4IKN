@@ -218,6 +218,7 @@ namespace tcp
             outputFileName = outputFileNameAppend;
 
             // Save file
+            Array.Resize(ref buffer, fileSize - 1);
             File.WriteAllBytes(outputFileName, buffer);
 
             Console.WriteLine($"\nFile saved as \"{outputFileName}\"");

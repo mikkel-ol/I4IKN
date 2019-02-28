@@ -104,7 +104,7 @@ namespace tcp
 
             // Send file size
             Console.Write("Sending file size.. \t\t");
-            byte[] fileSize = Encoding.ASCII.GetBytes("200" + new FileInfo(filePath).Length.ToString());
+            byte[] fileSize = Encoding.ASCII.GetBytes("200" + (new FileInfo(filePath).Length + 1).ToString()); // + 1 due to appended '0'
             handler.Send(fileSize);
             WriteInColor("GREEN", "Done.");
 
@@ -120,7 +120,10 @@ namespace tcp
                 else
                 { // Send file
                     Console.Write("Sending file.. \t\t\t");
+
                     handler.SendFile(filePath);
+                    handler.Send(new Byte['0']); // Handle empty file
+
                     WriteInColor("GREEN", "Done.");
                 }
 
