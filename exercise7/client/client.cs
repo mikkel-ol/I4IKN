@@ -16,6 +16,7 @@ namespace client
         char command;
 
         UdpClient udp;
+        IPEndPoint remoteEndPoint;
 
         string ipAddress;
 
@@ -36,11 +37,14 @@ namespace client
             // Create a UDP client
             CreateClient();
 
+            // Connect to end point
+            ConnectToServer();
+
             // Get command
             GetCommandFromUser();
 
             // Send command
-            udp.Send(BitConverter.GetBytes(command), 1);
+            udp.Send(new byte[] { Convert.ToByte(command) }, 1);
         }
 
         private void GetIpFromUser()
@@ -68,7 +72,17 @@ namespace client
         {
             Console.Write("Creating UDP client.. \t\t");
 
-            udp = new UdpClient(ipAddress, PORT);
+            udp = new UdpClient();
+            remoteEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), PORT);
+
+            WriteInColor("GREEN", "Done.");
+        }
+
+        private void ConnectToServer()
+        {
+            Console.Write("Connecting to server.. \t\t");
+
+            udp.Connect(remoteEndPoint);
 
             WriteInColor("GREEN", "Done.");
         }
