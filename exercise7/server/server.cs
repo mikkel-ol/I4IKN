@@ -49,8 +49,8 @@ namespace server
                     else if (!HandleCommand()) WriteInColor("RED", "UNKNOWN COMMAND RECEIVED");
 
                     // Start over
-                    WriteInColor("CYAN", "CLIENT HANDLED. RESTARTING UDP CLIENT");
-                    CreateClient();
+                    WriteInColor("CYAN", "CLIENT HANDLED. WAITING ON NEW DATA.");
+                    Console.WriteLine("");
                 }
 
             } catch (Exception e) {
