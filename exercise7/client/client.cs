@@ -45,6 +45,9 @@ namespace client
 
             // Send command
             udp.Send(new byte[] { Convert.ToByte(command) }, 1);
+
+            // Output answer to user
+            ShowAnswer();
         }
 
         private void GetIpFromUser()
@@ -91,7 +94,7 @@ namespace client
         {
             Console.WriteLine("");
 
-            Console.Write("(Uptime: ");
+            Console.Write("(Uptime:       ");
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.Write("u/U");
             Console.ResetColor();
@@ -134,6 +137,96 @@ namespace client
             command = input[0];
 
             Console.ResetColor();
+            Console.WriteLine("");
+        }
+
+        private void ShowAnswer()
+        {
+            // Receive answer
+            var a = udp.Receive(ref remoteEndPoint);
+            string answer = Encoding.ASCII.GetString(a);
+
+            if (command == 'u' || command == 'U') {
+                Console.Write("Total uptime:\t\t\t");
+
+                string[] split = answer.Split(' ');
+
+                string totalSeconds = PrettyTime(split[0]);
+                string cpuIdle = PrettyTime(split[1]);
+
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(totalSeconds);
+                Console.ResetColor();
+
+
+                Console.Write("Total CPU idle time:\t\t");
+
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(cpuIdle);
+                Console.ResetColor();
+            }
+            else {
+                Console.WriteLine("Load average on server:");
+
+                string[] split = answer.Split(' ');
+
+                double oneMin = Convert.ToDouble(split[0]);
+                double fiveMin = Convert.ToDouble(split[1]);
+                double fifteenMin = Convert.ToDouble(split[2]);
+                
+                string[] kernel = split[3].Split('/');
+                string kernelCurrent = kernel[0];
+                string kernelQueue = kernel[1];
+
+                string pid = split[4];
+
+                Console.Write("1 min:\t\t\t\t");
+                if (oneMin < .5) Console.ForegroundColor = ConsoleColor.DarkGreen;
+                else if (oneMin < 1) Console.ForegroundColor = ConsoleColor.DarkYellow;
+                else Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(oneMin);
+                Console.ResetColor();
+
+                Console.Write("5 min:\t\t\t\t");
+                if (fiveMin < .5) Console.ForegroundColor = ConsoleColor.DarkGreen;
+                else if (fiveMin < 1) Console.ForegroundColor = ConsoleColor.DarkYellow;
+                else Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(fiveMin);
+                Console.ResetColor();
+
+                Console.Write("15 min:\t\t\t\t");
+                if (fifteenMin < .5) Console.ForegroundColor = ConsoleColor.DarkGreen;
+                else if (fifteenMin < 1) Console.ForegroundColor = ConsoleColor.DarkYellow;
+                else Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(fifteenMin);
+                Console.ResetColor();
+
+                Console.Write("Kernel, current:\t\t");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(kernelCurrent);
+                Console.ResetColor();
+
+                Console.Write("Kernel, scheduled:\t\t");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(kernelQueue);
+                Console.ResetColor();
+
+                Console.Write("Most recent PID:\t\t");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(pid);
+                Console.ResetColor();
+            }
+        }
+
+        private string PrettyTime(string input)
+        {
+            TimeSpan t = TimeSpan.FromSeconds(Convert.ToDouble(input));
+            string prettyTime = string.Format("{0:D2}h {1:D2}m {2:D2}s {3:D3}ms",
+                                    t.Hours,
+                                    t.Minutes,
+                                    t.Seconds,
+                                    t.Milliseconds);
+            return prettyTime;
         }
 
         static void WriteInColor(string color, string msg)
