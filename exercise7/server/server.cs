@@ -14,10 +14,9 @@ namespace server
         byte[] buffer = new Byte[BUFSIZE];
         char command;
 
-        Socket sock;
+        UdpClient udp;
 
-        IPAddress ipAddress;
-        IPEndPoint localEndPoint;
+        IPEndPoint remoteEndPoint;
 
         string uptime = "/proc/uptime";
         string loadavg = "/proc/loadavg";
@@ -27,25 +26,20 @@ namespace server
             WriteInColor("MAGENTA", "\n" +
                 "FILE SERVER IS STARTING UP.."
             + "\n");
-            
+
             new Server();
         }
 
         private Server()
         {
-            // Define ip address and endpoint as local computer
-            ipAddress = IPAddress.Any;
-            localEndPoint = new IPEndPoint(ipAddress, PORT);
-
             try {
-                // Create a TCP/IP socket and start listening
-                CreateSocket();
+                // Create UDP client
+                CreateClient();
 
                 while (true) 
                 {
-                    // Wait for client
-                    while (sock.Available == 0) {}
-
+                    // Get data (blocking)
+                    ReceiveData();
                     WriteInColor("GREEN", "Data received");
 
                     // Receive command from client
@@ -55,8 +49,8 @@ namespace server
                     else if (!HandleCommand()) WriteInColor("RED", "UNKNOWN COMMAND RECEIVED");
 
                     // Start over
-                    WriteInColor("CYAN", "CLIENT HANDLED. MAKING NEW SOCKET.");
-                    CreateSocket(); // Start listening
+                    WriteInColor("CYAN", "CLIENT HANDLED. RESTARTING UDP CLIENT");
+                    CreateClient();
                 }
 
             } catch (Exception e) {
@@ -64,29 +58,36 @@ namespace server
             }
         }
 
-        private void CreateSocket()
+        private void CreateClient()
         {
-            Console.Write("Creating socket.. \t\t");
+            Console.Write("Creating UDP client.. \t\t");
 
-            sock = new Socket(ipAddress.AddressFamily,
-                SocketType.Dgram, ProtocolType.Udp);
+            udp = new UdpClient(PORT);
+            remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             WriteInColor("GREEN", "Done.");
+        }
 
-            Console.Write("Ready to receive data.. \t");
+        private void ReceiveData()
+        {
+            try 
+            {
+                // Wait until data is received
+                Console.Write("Ready to receive data.. \t");
+                buffer = udp.Receive(ref remoteEndPoint);
+            }
+            catch (Exception) 
+            {
 
-            sock.EnableBroadcast = true;
-            sock.Bind(localEndPoint);
+            }
         }
 
         private bool GetCommand()
         {
             // Wait for command from client
             Console.Write("Getting command.. \t\t");
-            sock.Blocking = true;
-            int bytesReceived = sock.Receive(buffer);
 
-            string received = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
+            string received = Encoding.ASCII.GetString(buffer);
 
             // Nothing received
             if (received.Length == 0) return false;
@@ -126,12 +127,20 @@ namespace server
 
         private void SendUptime()
         {
-            sock.SendFile(uptime);
+            udp.Connect(remoteEndPoint);
+
+            var content = File.ReadAllBytes(uptime);
+
+            udp.Send(content, content.Length, remoteEndPoint);
         }
 
         private void SendLoadAvg()
         {
-            sock.SendFile(loadavg);
+            udp.Connect(remoteEndPoint);
+
+            var content = File.ReadAllBytes(loadavg);
+
+            udp.Send(content, content.Length, remoteEndPoint);
         }
 
         static void WriteInColor(string color, string msg)
