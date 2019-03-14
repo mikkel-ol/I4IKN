@@ -24,6 +24,10 @@ namespace server
 
         static void Main(string[] args)
         {
+            WriteInColor("MAGENTA", "\n" +
+                "FILE SERVER IS STARTING UP.."
+            + "\n");
+            
             new Server();
         }
 
