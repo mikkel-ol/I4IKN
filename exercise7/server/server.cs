@@ -131,7 +131,7 @@ namespace server
 
             var content = File.ReadAllBytes(uptime);
 
-            udp.Send(content, content.Length, remoteEndPoint);
+            udp.Send(content, content.Length);
         }
 
         private void SendLoadAvg()
@@ -140,7 +140,7 @@ namespace server
 
             var content = File.ReadAllBytes(loadavg);
 
-            udp.Send(content, content.Length, remoteEndPoint);
+            udp.Send(content, content.Length);
         }
 
         static void WriteInColor(string color, string msg)
