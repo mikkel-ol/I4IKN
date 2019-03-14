@@ -14,10 +14,13 @@ namespace server
         byte[] buffer = new Byte[BUFSIZE];
         char command;
 
-        Socket listener;
+        Socket sock;
 
         IPAddress ipAddress;
         IPEndPoint localEndPoint;
+
+        string uptime = "/proc/uptime";
+        string loadavg = "/proc/loadavg";
 
         static void Main(string[] args)
         {
@@ -37,7 +40,7 @@ namespace server
                 while (true) 
                 {
                     // Wait for client
-                    while (listener.Available == 0) {}
+                    while (sock.Available == 0) {}
 
                     WriteInColor("GREEN", "Data received");
 
@@ -61,23 +64,23 @@ namespace server
         {
             Console.Write("Creating socket.. \t\t");
 
-            listener = new Socket(ipAddress.AddressFamily,
+            sock = new Socket(ipAddress.AddressFamily,
                 SocketType.Dgram, ProtocolType.Udp);
 
             WriteInColor("GREEN", "Done.");
 
             Console.Write("Ready to receive data.. \t");
 
-            listener.EnableBroadcast = true;
-            listener.Bind(localEndPoint);
+            sock.EnableBroadcast = true;
+            sock.Bind(localEndPoint);
         }
 
         private bool GetCommand()
         {
             // Wait for command from client
             Console.Write("Getting command.. \t\t");
-            listener.Blocking = true;
-            int bytesReceived = listener.Receive(buffer);
+            sock.Blocking = true;
+            int bytesReceived = sock.Receive(buffer);
 
             string received = Encoding.ASCII.GetString(buffer, 0, bytesReceived);
 
@@ -119,12 +122,12 @@ namespace server
 
         private void SendUptime()
         {
-            FileStream fs = File.Open("/proc/uptime", FileMode.Open);
+            sock.SendFile(uptime);
         }
 
         private void SendLoadAvg()
         {
-
+            sock.SendFile(loadavg);
         }
 
         static void WriteInColor(string color, string msg)
