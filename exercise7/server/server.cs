@@ -63,7 +63,7 @@ namespace server
             Console.Write("Creating UDP client.. \t\t");
 
             udp = new UdpClient(PORT);
-            remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            remoteEndPoint = new IPEndPoint(IPAddress.Any, PORT);
 
             WriteInColor("GREEN", "Done.");
         }
@@ -127,20 +127,16 @@ namespace server
 
         private void SendUptime()
         {
-            udp.Connect(remoteEndPoint);
-
             var content = File.ReadAllBytes(uptime);
 
-            udp.Send(content, content.Length);
+            udp.Send(content, content.Length, remoteEndPoint);
         }
 
         private void SendLoadAvg()
         {
-            udp.Connect(remoteEndPoint);
-
             var content = File.ReadAllBytes(loadavg);
 
-            udp.Send(content, content.Length);
+            udp.Send(content, content.Length, remoteEndPoint);
         }
 
         static void WriteInColor(string color, string msg)
