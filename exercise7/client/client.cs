@@ -15,10 +15,9 @@ namespace client
 
         char command;
 
-        Socket sock;
+        UdpClient udp;
 
-        IPAddress ipAddress;
-        IPEndPoint remoteEndPoint;
+        string ipAddress;
 
         static void Main(string[] args)
         {
@@ -34,14 +33,14 @@ namespace client
             // Get IP to server
             GetIpFromUser();
 
-            // Create a UDP socket
-            CreateSocket();
+            // Create a UDP client
+            CreateClient();
 
             // Get command
             GetCommandFromUser();
 
             // Send command
-            sock.Send(BitConverter.GetBytes(command));
+            udp.Send(BitConverter.GetBytes(command), 1);
         }
 
         private void GetIpFromUser()
@@ -57,23 +56,21 @@ namespace client
             Console.ForegroundColor = ConsoleColor.DarkYellow;
 
             // Set IP to localhost if no input
-            string userIP = Console.ReadLine();
-            ipAddress = userIP.Length > 0 ? IPAddress.Parse(userIP) : IPAddress.Parse("127.0.0.1");
-            remoteEndPoint = new IPEndPoint(ipAddress, PORT);
+            string input = Console.ReadLine();
+            ipAddress = input.Length > 0 ? input : "127.0.0.1";
 
             Console.ResetColor();
 
             Console.WriteLine("");
         }
 
-        private void CreateSocket()
+        private void CreateClient()
         {
-            Console.Write("Creating socket.. ");
+            Console.Write("Creating UDP client.. \t\t");
 
-            sock = new Socket(ipAddress.AddressFamily,
-                SocketType.Dgram, ProtocolType.Udp);
+            udp = new UdpClient(ipAddress, PORT);
 
-            WriteInColor("GREEN", "Done");
+            WriteInColor("GREEN", "Done.");
         }
 
         private void GetCommandFromUser()
