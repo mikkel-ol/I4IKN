@@ -15,6 +15,7 @@ namespace Core
             StopBits stop = StopBits.One)
         {
             _port = new SerialPort(path, baud, (System.IO.Ports.Parity) par, databits, (System.IO.Ports.StopBits) stop);
+            Open();
         }
 
         ~Serial()
@@ -22,7 +23,7 @@ namespace Core
             _port.Close();
         }
 
-        public bool Open()
+        public void Open()
         {
             try
             {
@@ -31,13 +32,12 @@ namespace Core
             catch (UnauthorizedAccessException)
             {
                 // Port is in use or access denied
-                return false;
+                throw new PortException("Access denied to serial port or port already opened");
             }
             catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
-            return true;
         }
 
         public bool Send(byte[] data, int length)

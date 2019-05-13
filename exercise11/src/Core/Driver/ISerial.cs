@@ -2,7 +2,7 @@ namespace Core
 {
     public interface ISerial
     {
-        bool Open();
+        void Open();
         bool Send(byte[] data, int length);
         int Receive(ref byte[] buffer, int length = 4096);
     }
