@@ -5,7 +5,7 @@ namespace Core
 {
     public class Serial : ISerial
     {
-        private SerialPort _port;
+        public SerialPort Port { get; private set; }
 
         public Serial(
             string path = "/dev/ttyS0",
@@ -14,20 +14,20 @@ namespace Core
             int databits = 8,
             StopBits stop = StopBits.One)
         {
-            _port = new SerialPort(path, baud, (System.IO.Ports.Parity) par, databits, (System.IO.Ports.StopBits) stop);
+            Port = new SerialPort(path, baud, (System.IO.Ports.Parity) par, databits, (System.IO.Ports.StopBits) stop);
             Open();
         }
 
         ~Serial()
         {
-            _port.Close();
+            Port.Close();
         }
 
         public void Open()
         {
             try
             {
-                _port.Open();
+                Port.Open();
             }
             catch (UnauthorizedAccessException)
             {
@@ -44,10 +44,11 @@ namespace Core
         {
             try
             {
-                _port.Write(data, 0, length);
+                Port.Write(data, 0, length);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.Error.WriteLine(e);
                 return false;
             }
             return true;
@@ -57,7 +58,7 @@ namespace Core
         {
             try
             {
-                return _port.Read(buffer, 0, length);
+                return Port.Read(buffer, 0, length);
             }
             catch (Exception)
             {

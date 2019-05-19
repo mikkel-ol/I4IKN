@@ -11,6 +11,11 @@ namespace Core
             this.Value = Calculate(data);
         }
 
+        public Checksum(byte high, byte low)
+        {
+            this.Value = ((high << 8) & 0xFF) + (low & 0xFF);
+        }
+
         public override bool Equals(object obj)
         {
             // Try casting

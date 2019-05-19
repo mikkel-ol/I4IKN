@@ -7,6 +7,6 @@ namespace Core
         ITimeout Timeout { get; }
 
         void Send(byte[] data);
-        int Receive(ref byte[] buffer);
+        void Receive(ref byte[] buffer);
     }
 }

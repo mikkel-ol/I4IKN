@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Text;
 
-using Core;
+using System.Linq;
 
 namespace Server
 {
@@ -9,26 +10,90 @@ namespace Server
     {
         static void Main(string[] args)
         {
-            // var msg = "Test message";
-            // var bMsg = Encoding.UTF8.GetBytes(msg);
+            WriteLine("Server started", Color.GREEN);
+            WriteLine("");
 
-            // var chksum = new Checksum(bMsg);
+            Write("Input serial device: ");
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            string port = "dev/ttys001"; //Console.ReadLine();
+            Console.ResetColor();
 
-            // byte chksumHigh = (byte) ((chksum.Value >> 8) & 0xFF);
-            // byte chksumLow = (byte) (chksum.Value & 0xFF);
-            // byte seq = 0b1;
-            // var type = Core.Type.DATA;
+            var server = new Server(port);
 
-            // var header = new Header(chksumHigh, chksumLow, seq, type);
-            // var data = new Data(bMsg);
+            Console.WriteLine($"Server created on port \"{port}\"");
 
-            // var packet = new Packet(header, data);
+            var testArray = new byte[1];
+            testArray[0] = (byte) 'B';
 
-            // byte[] bPacket = packet;
-
-            // var device = new Serial();
-            // var transport = new Transport(device);
-            // transport.Send(bPacket);
+            server.Send(testArray);
         }
+
+        #region helper methods
+        static void Write(string msg, Color c = Color.DEFAULT)
+        {
+            switch (c)
+            {
+                case Color.RED:
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    break;
+
+                case Color.GREEN:
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    break;
+
+                case Color.BLUE:
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    break;
+
+                case Color.GRAY:
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    break;
+
+                default:
+                    break;
+            }
+
+            Console.Write(msg);
+            Console.ResetColor();
+        }
+
+        static void WriteLine(string msg, Color c = Color.DEFAULT)
+        {
+            switch (c)
+            {
+                case Color.RED:
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    break;
+
+                case Color.GREEN:
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    break;
+
+                case Color.BLUE:
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    break;
+
+                case Color.GRAY:
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    break;
+
+                default:
+                    break;
+            }
+
+            Console.WriteLine(msg);
+            Console.ResetColor();
+        }
+
+        enum Color
+        {
+            RED,
+            GREEN,
+            BLUE,
+            GRAY,
+            DEFAULT
+        }
+
+        #endregion
     }
 }
