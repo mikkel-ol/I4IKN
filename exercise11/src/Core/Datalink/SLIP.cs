@@ -11,14 +11,10 @@ namespace Core
         public char TransposedFrameEscape { get; set; } = 'D';
 
         public ISerial Device { get; private set; }
-        public byte[] Buffer { get; private set; }
         
         public SLIP(ISerial dev)
         {
             this.Device = dev;
-
-            // Buffer size should be able to handle worst case
-            this.Buffer = new byte[4096]; 
         }
 
         public SLIP(string serialPath) 
@@ -36,13 +32,13 @@ namespace Core
 
         public int Receive(ref byte[] data, int length)
         {
-            byte[] buf = new byte[data.Length];
+            byte[] buf = new byte[length*2+4]; // Should be able to handle wrost case
 
-            int recv = this.Device.Receive(ref buf, length);
+            int recv = this.Device.Receive(ref buf, buf.Length);
 
             if (recv == -1) return recv;
 
-            data = Decode(buf);
+            recv = Decode(buf, ref data, recv);
 
             return recv;
         }
@@ -78,19 +74,19 @@ namespace Core
             return (byte[]) dataEndoded.ToArray(typeof(byte));
         }
 
-        private byte[] Decode(byte[] data)
+        private int Decode(byte[] src, ref byte[] dst, int len)
         {
             // Need dynamic sized array
             var dataDecoded = new ArrayList();
 
             // Ignore first and last byte (delimiters)
-            for (int i = 1; i < data.Length - 1; i++)
+            for (int i = 1; i < len - 1; i++)
             {
-                byte current = data[i];
+                byte current = src[i];
 
                 if (current == (byte) this.FrameEscape)                     // 'B'
                 {
-                    byte next = data[i+1];
+                    byte next = src[i+1];
 
                     if (next == (byte) this.TransposedFrameEnd)             // 'C'
                     {
@@ -107,7 +103,9 @@ namespace Core
                 }
             }
 
-            return (byte[]) dataDecoded.ToArray(typeof(byte));
+           var datArr = (byte[]) dataDecoded.ToArray(typeof(byte));
+           Array.Copy(datArr, dst, datArr.Length);
+           return datArr.Length;
         }
     }
 }

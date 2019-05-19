@@ -2,13 +2,13 @@ using System;
 
 using Core;
 
-namespace Server
+namespace Client
 {
-    public class Server
+    public class Client
     {
         public Transport Transport { get; private set; }
 
-        public Server(string port)
+        public Client(string port)
         {
             this.Transport = new Transport(port, 2);
         }

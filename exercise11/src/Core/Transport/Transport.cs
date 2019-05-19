@@ -60,17 +60,20 @@ namespace Core
         // TODO: Handle already received packets
         public void Receive(ref byte[] buffer)
         {
-            var buf = new byte[this.MaxSize];
+            var buf1 = new byte[this.MaxSize+4]; // Data + Header
             int res = 0;
-            int ite = 1;
 
             do
             {
-                res = this.Slip.Receive(ref buf, buf.Length);
+                res = this.Slip.Receive(ref buf1, buf1.Length);
                 if (res == -1) throw new ReceiveException("Error while receiving");
                 // TODO: Might need to handle res == 0 here (null errors below..)
 
-                var pack = (Packet) buf;
+                // Copy exact data received (could be less than max size)
+                var buf2 = new byte[res];
+                Array.Copy(buf1, buf2, res);
+
+                var pack = (Packet) buf2;
                 var calcChecksum = new Checksum(pack.Data);
                 var recvChecksum = new Checksum(pack.Header.CS_HI, pack.Header.CS_LO);
                 var seq = Convert.ToBoolean(pack.Header.SEQ);
@@ -83,11 +86,15 @@ namespace Core
 
                 // Copy current data in packet to buffer
                 var data = (byte[]) pack.Data;
-                Buffer.BlockCopy(data, 0, buffer, ite * this.MaxSize, data.Length);
+                Array.Copy(data, buffer, data.Length);
 
-                ite++;
-            } 
-            while (res != 0);
+                Console.WriteLine(res);
+                foreach(byte b in data)
+                {
+                    Console.WriteLine((char)b);
+                }
+            }
+            while(res == this.MaxSize);
         }
 
         private byte[] Pack(byte[] msg, bool seqNo)

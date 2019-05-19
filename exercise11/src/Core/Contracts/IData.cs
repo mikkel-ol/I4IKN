@@ -8,6 +8,7 @@ namespace Core
         // Assignment operator overloading
         public static implicit operator byte[](IData d)
         {
+            if (d == null) return new byte[0];
             return d.Value;
         }
     }

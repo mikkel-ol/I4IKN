@@ -15,15 +15,19 @@ namespace Server
 
             Write("Input serial device: ");
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            string port = "dev/ttys001"; //Console.ReadLine();
+            string port = "COM3"; //Console.ReadLine();
             Console.ResetColor();
 
             var server = new Server(port);
 
             Console.WriteLine($"Server created on port \"{port}\"");
 
-            var testArray = new byte[1];
-            testArray[0] = (byte) 'B';
+            var testArray = new byte[5];
+            testArray[0] = (byte)'a';
+            testArray[1] = (byte)'b';
+            testArray[2] = (byte)'c';
+            testArray[3] = (byte)'d';
+            testArray[4] = (byte)'e';
 
             server.Send(testArray);
         }
