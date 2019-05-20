@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace Core
 {
     public interface ITransport
@@ -7,6 +9,6 @@ namespace Core
         ITimeout Timeout { get; }
 
         void Send(byte[] data);
-        void Receive(ref byte[] buffer);
+        void Receive(ref ArrayList buffer);
     }
 }

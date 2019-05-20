@@ -34,6 +34,10 @@ namespace Core
                 // Port is in use or access denied
                 throw new PortException("Access denied to serial port or port already opened");
             }
+            catch (ArgumentException)
+            {
+                throw new PortException("Port name invalid");
+            }
             catch (Exception e)
             {
                 Console.Error.WriteLine(e);

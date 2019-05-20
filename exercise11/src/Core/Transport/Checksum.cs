@@ -13,7 +13,7 @@ namespace Core
 
         public Checksum(byte high, byte low)
         {
-            this.Value = ((high << 8) & 0xFF) + (low & 0xFF);
+            this.Value = ((high & 0xFF) << 8) + (low & 0xFF);
         }
 
         public override bool Equals(object obj)

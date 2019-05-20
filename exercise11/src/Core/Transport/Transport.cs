@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 
 namespace Core
 {
@@ -8,7 +9,8 @@ namespace Core
         public ISLIP Slip { get; private set; }
         public ITimeout Timeout { get; private set; }
         private int _retries = 0;
-        private bool _sequence = false; // Alternate between 0 and 1
+        private bool _previousSeq = true; // Start inverted
+        private bool _currentSeq = false; // Alternate between 0 and 1
 
         public Transport(string device, int maxSize)
         {
@@ -31,18 +33,18 @@ namespace Core
                 if (_retries > 5) break;
 
                 // Get sub array of (maximum) size
-                int cl = (this.MaxSize * (ite + 1) - 1) < l ? this.MaxSize * (ite + 1) - 1 : l;
+                int cl = this.MaxSize < l ? this.MaxSize : l;
                 current = data.SubArray(this.MaxSize * ite, cl); // 0-999, 1000-1999, 2000-2999 etc.
 
                 // Pack message and send it
-                var packet = Pack(current, _sequence);
+                var packet = Pack(current, _currentSeq);
                 this.Slip.Send(packet, packet.Length);
 
                 // Wait for ACK
                 int res = WaitForAck();
 
-                // If ACK is not the same _sequence number as current, send pack again (loop again)
-                if (res != Convert.ToInt32(_sequence))
+                // If ACK is not the same _currentsequence number as current, send pack again (loop again)
+                if (res != Convert.ToInt32(_currentSeq))
                 {
                     _retries++;
                 }
@@ -50,7 +52,7 @@ namespace Core
                 else
                 {
                     ite++;
-                    _sequence = !_sequence;
+                    _currentSeq = !_currentSeq;
                     l -= this.MaxSize;
                 }
             }
@@ -58,73 +60,81 @@ namespace Core
         }
 
         // TODO: Handle already received packets
-        public void Receive(ref byte[] buffer)
+        public void Receive(ref ArrayList buffer)
         {
-            var buf1 = new byte[this.MaxSize+4]; // Data + Header
-            int res = 0;
+            var buf1 = new byte[this.MaxSize + 4]; // Data + Header
 
-            do
+            int res = this.Slip.Receive(ref buf1, buf1.Length);
+            if (res == -1) throw new ReceiveException("Error while receiving");
+            // TODO: Might need to handle res == 0 here (null errors below..)
+
+            // Copy exact data received (could be less than max size)
+            var buf2 = new byte[res];
+            Array.Copy(buf1, buf2, res);
+
+            var pack = (Packet) buf2;
+            var calcChecksum = new Checksum(pack.Data);
+            var recvChecksum = new Checksum(pack.Header.CS_HI, pack.Header.CS_LO);
+            _currentSeq = Convert.ToBoolean(pack.Header.SEQ);
+            
+            // Already received packet
+            if (_previousSeq == _currentSeq) 
             {
-                res = this.Slip.Receive(ref buf1, buf1.Length);
-                if (res == -1) throw new ReceiveException("Error while receiving");
-                // TODO: Might need to handle res == 0 here (null errors below..)
-
-                // Copy exact data received (could be less than max size)
-                var buf2 = new byte[res];
-                Array.Copy(buf1, buf2, res);
-
-                var pack = (Packet) buf2;
-                var calcChecksum = new Checksum(pack.Data);
-                var recvChecksum = new Checksum(pack.Header.CS_HI, pack.Header.CS_LO);
-                var seq = Convert.ToBoolean(pack.Header.SEQ);
-
-                // TODO: Might need to handle differently
-                if (calcChecksum != recvChecksum)
-                    SendAck(!seq); // Send ACK of previous
-                
-                else SendAck(seq);
-
-                // Copy current data in packet to buffer
-                var data = (byte[]) pack.Data;
-                Array.Copy(data, buffer, data.Length);
-
-                Console.WriteLine(res);
-                foreach(byte b in data)
-                {
-                    Console.WriteLine((char)b);
-                }
+                SendAck(_currentSeq);
+                return; 
             }
-            while(res == this.MaxSize);
+
+            // Wrong checksum
+            // TODO: Might need to handle differently
+            if (calcChecksum != recvChecksum)
+            {
+                SendAck(!_currentSeq); // Send ACK of previous
+                return; // Don't save data
+            }
+
+            // Add current data to list
+            var data = (byte[])pack.Data;
+            foreach (byte b in data)
+            {
+                buffer.Add(b);
+            }
+
+            // Acknowledge packet
+            SendAck(_currentSeq);
+            _previousSeq = _currentSeq;
         }
 
         private byte[] Pack(byte[] msg, bool seqNo)
         {
             var chksum = new Checksum(msg);
-            byte chksumHigh = (byte) ((chksum.Value >> 8) & 0xFF);
-            byte chksumLow = (byte) (chksum.Value & 0xFF);
+            byte chksumHigh = (byte)((chksum.Value >> 8) & 0xFF);
+            byte chksumLow = (byte)(chksum.Value & 0xFF);
 
-            byte seq = (byte) Convert.ToInt32(seqNo);
+            byte seq = (byte)Convert.ToInt32(seqNo);
             var type = Core.Type.DATA;
 
             var header = new Header(chksumHigh, chksumLow, seq, type);
             var data = new Data(msg);
 
-            return (byte[]) (new Packet(header, data));
+            return (byte[])(new Packet(header, data));
         }
 
         private void SendAck(bool seqNo)
         {
-            var ackHeader = new Header((byte) Convert.ToInt32(seqNo), Core.Type.ACK);
-            var packet = (byte[]) (new Packet(ackHeader, null));
+            var ackHeader = new Header((byte)Convert.ToInt32(seqNo), Core.Type.ACK);
+            var packet = (byte[])(new Packet(ackHeader, null));
 
             this.Slip.Send(packet, packet.Length);
         }
 
+        // TODO: Handle timeout
         private int WaitForAck()
         {
             byte[] buf = new byte[this.MaxSize * 2]; // ACK packet should never be bigger than this
 
-            int recv = this.Slip.Receive(ref buf, buf.Length);
+            // TODO: Start timer
+            this.Slip.Receive(ref buf, buf.Length);
+            // TODO: End timer
 
             if (buf[3] != (byte)Core.Type.ACK) return -1;
 

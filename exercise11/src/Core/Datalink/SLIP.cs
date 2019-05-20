@@ -32,7 +32,7 @@ namespace Core
 
         public int Receive(ref byte[] data, int length)
         {
-            byte[] buf = new byte[length*2+4]; // Should be able to handle wrost case
+            byte[] buf = new byte[length*2+2]; // Should be able to handle wrost case
 
             int recv = this.Device.Receive(ref buf, buf.Length);
 
@@ -91,10 +91,12 @@ namespace Core
                     if (next == (byte) this.TransposedFrameEnd)             // 'C'
                     {
                         dataDecoded.Add((byte) this.Delimiter);             // 'A'
+                        i++;
                     }
                     else if (next == (byte) this.TransposedFrameEscape)     // 'D'
                     {
                         dataDecoded.Add((byte) this.FrameEscape);           // 'B'
+                        i++;
                     }
                 }
                 else

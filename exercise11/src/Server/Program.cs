@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections;
 using System.Text;
 
@@ -8,28 +9,71 @@ namespace Server
 {
     class Program
     {
+        const int MAX_SIZE = 1000;
+        static Server server;
+
         static void Main(string[] args)
         {
             WriteLine("Server started", Color.GREEN);
             WriteLine("");
 
-            Write("Input serial device: ");
+            Write("Input serial device (eg. COM3): ");
             Console.ForegroundColor = ConsoleColor.DarkYellow;
-            string port = "COM3"; //Console.ReadLine();
+            string port = Console.ReadLine();
             Console.ResetColor();
 
-            var server = new Server(port);
+            try
+            {
+                server = new Server(port, MAX_SIZE);
+            }
+            catch (PortException)
+            {
+                WriteLine("ERROR. COULD NOT OPEN PORT. EXITING", Color.RED);
+                return;
+            }
 
-            Console.WriteLine($"Server created on port \"{port}\"");
+            WriteLine($"Server created on port \"{port.ToUpper()}\"");
 
-            var testArray = new byte[5];
-            testArray[0] = (byte)'a';
-            testArray[1] = (byte)'b';
-            testArray[2] = (byte)'c';
-            testArray[3] = (byte)'d';
-            testArray[4] = (byte)'e';
+            while (true)
+            {
+                Loop();
+            }
+        }
 
-            server.Send(testArray);
+        static void Loop()
+        {
+            Write("Waiting for data.. ");
+
+            var buffer = new ArrayList();
+            server.Receive(ref buffer);
+
+            WriteLine("Request received.");
+
+            // Get byte array from received request
+            var arr = (byte[])buffer.ToArray(typeof(byte));
+
+            // Convert to string and get file size
+            Write("Reading file info.. ");
+            var fileName = Encoding.ASCII.GetString(arr, 0, arr.Length);
+            var fileSize = new FileInfo(
+                    Path.Combine(Environment.CurrentDirectory, fileName)
+                ).Length;
+            WriteLine("Done");
+
+            // Send file size
+            Write("Sending file size.. ");
+            server.Send(Encoding.ASCII.GetBytes(fileSize.ToString()));
+            WriteLine("Done");
+
+            // Read file into byte array
+            var file = File.ReadAllBytes(fileName);
+
+            // Send file
+            Write("Sending file.. ");
+            server.Send(file);
+            WriteLine("Done");
+
+            WriteLine("\nClient handled. Restarting..\n", Color.GREEN);
         }
 
         #region helper methods

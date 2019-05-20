@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 
 using Core;
 
@@ -8,9 +9,9 @@ namespace Server
     {
         public Transport Transport { get; private set; }
 
-        public Server(string port)
+        public Server(string port, int size)
         {
-            this.Transport = new Transport(port, 2);
+            this.Transport = new Transport(port, size);
         }
 
         public void Send(byte[] data)
@@ -18,7 +19,7 @@ namespace Server
             this.Transport.Send(data);
         }
 
-        public void Receive(ref byte[] buffer)
+        public void Receive(ref ArrayList buffer)
         {
             this.Transport.Receive(ref buffer);
         }
